@@ -43,6 +43,7 @@
             this.btnAbout = new System.Windows.Forms.Button();
             this.btnLocalIP = new System.Windows.Forms.Button();
             this.btnIPSearchOnline = new System.Windows.Forms.Button();
+            this.onlineSearchProgressBar = new System.Windows.Forms.ProgressBar();
             this.SuspendLayout();
             // 
             // notifyIcon1
@@ -59,6 +60,7 @@
             this.txtIPList.Location = new System.Drawing.Point(117, 28);
             this.txtIPList.Multiline = true;
             this.txtIPList.Name = "txtIPList";
+            this.txtIPList.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtIPList.Size = new System.Drawing.Size(128, 347);
             this.txtIPList.TabIndex = 0;
             this.txtIPList.Text = "127.0.0.1\r\n8.8.8.8\r\n192.168.1.1\r\n114.114.114.114\r\n";
@@ -72,6 +74,7 @@
             this.txtResult.Multiline = true;
             this.txtResult.Name = "txtResult";
             this.txtResult.ReadOnly = true;
+            this.txtResult.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtResult.Size = new System.Drawing.Size(392, 347);
             this.txtResult.TabIndex = 1;
             // 
@@ -178,11 +181,19 @@
             this.btnIPSearchOnline.UseVisualStyleBackColor = true;
             this.btnIPSearchOnline.Click += new System.EventHandler(this.btnIPSearchOnline_Click);
             // 
+            // onlineSearchProgressBar
+            // 
+            this.onlineSearchProgressBar.Location = new System.Drawing.Point(14, 239);
+            this.onlineSearchProgressBar.Name = "onlineSearchProgressBar";
+            this.onlineSearchProgressBar.Size = new System.Drawing.Size(100, 10);
+            this.onlineSearchProgressBar.TabIndex = 12;
+            // 
             // MainFrm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(655, 387);
+            this.Controls.Add(this.onlineSearchProgressBar);
             this.Controls.Add(this.btnIPSearchOnline);
             this.Controls.Add(this.btnLocalIP);
             this.Controls.Add(this.btnAbout);
@@ -198,6 +209,7 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "MainFrm";
             this.Text = "Form1";
+            this.Load += new System.EventHandler(this.MainFrm_Load);
             this.Resize += new System.EventHandler(this.MainFrm_Resize);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -219,6 +231,7 @@
         private System.Windows.Forms.Button btnAbout;
         private System.Windows.Forms.Button btnLocalIP;
         private System.Windows.Forms.Button btnIPSearchOnline;
+        private System.Windows.Forms.ProgressBar onlineSearchProgressBar;
     }
 }
 

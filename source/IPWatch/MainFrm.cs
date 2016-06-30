@@ -18,6 +18,7 @@ using System.Windows.Forms;
 using System.Text.RegularExpressions;
 using System.IO;
 using System.Net;
+using System.Threading;
 
 namespace IPWatch
 {
@@ -27,6 +28,8 @@ namespace IPWatch
         #region 版本信息 tag:base-1
         static public MainFrm Instance;
         #endregion
+
+        public static MainFrm mainFrm;
 
         public MainFrm()
         {
@@ -170,6 +173,7 @@ namespace IPWatch
         private void btnCls_Click(object sender, EventArgs e)
         {
             txtResult.Text = "";
+            txtIPList.Text = "";
         }
 
         /// <summary>
@@ -246,21 +250,51 @@ namespace IPWatch
                 MessageBox.Show("请输入要查找的IP地址");
                 return;
             }
+            string[] ipArr = txtIPList.Text.Split('\n');
 
+            onlineSearchProgressBar.Maximum = ipArr.Length;
+            txtResult.Text = "";
+
+            //起一个后台线程跑
+            Thread t1 = new Thread(new ParameterizedThreadStart(OnlineFindIPInfoThread));
+            t1.IsBackground = true;
+            t1.Start(ipArr);
+        }
+
+        /// <summary>
+        /// 在线查询线程调用方法
+        /// </summary>
+        /// <param name="ipArr"></param>
+        private void OnlineFindIPInfoThread(object ipArr) 
+        {
+            OnlineFindIPInfo((string[])ipArr);
+        }
+
+        /// <summary>
+        /// 在线批量查询IP地址
+        /// </summary>
+        /// <param name="ipArr"></param>
+        private void OnlineFindIPInfo(object ipArr)
+        {
+            string[] tempIpArr = (string[])ipArr;
+            setBtnEnable(false);
+            //onlineSearchProgressBar.Value = 0;
+            setProgressBarValue(onlineSearchProgressBar,0);
             //校验IP列表的合法性
             Regex reg = new Regex(@"((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)");
 
             //按每一行进行查找
             string resultMsg = "";
-            string[] ipArr = txtIPList.Text.Split('\n');
-            for (int i = 0; i < ipArr.Length; i++)
+            for (int i = 0; i < tempIpArr.Length; i++)
             {
-                if (ipArr[i] != "")
+
+                setProgressBarValue(onlineSearchProgressBar, i+1);
+                log("查询进行中[ " + i + "/" + tempIpArr.Length + " ]...");
+                if (tempIpArr[i] != "")
                 {
                     try
                     {
-                        //TODO 这里要用委托，不要卡UI
-                        string ip = reg.Match(ipArr[i]).Value;
+                        string ip = reg.Match(tempIpArr[i]).Value;
 
                         string tempStr = ip + "," + string.Join(",", IP.OnlineFind(ip));
                         for (int __count = Regex.Matches(tempStr, @",").Count; __count < 2; __count++)
@@ -273,7 +307,7 @@ namespace IPWatch
                     }
                     catch
                     {
-                        resultMsg += ipArr[i] + ",不合法的IP地址,\r\n";
+                        resultMsg += tempIpArr[i] + ",不合法的IP地址,\r\n";
                     }
                 }
                 else
@@ -281,8 +315,115 @@ namespace IPWatch
                     resultMsg += ",,\r\n";
                 }
             }
-            txtResult.Text = resultMsg;
+            addResult(resultMsg);
+
+            setBtnEnable(true);
+
+            setProgressBarValue(onlineSearchProgressBar, 0);
         }
+
+        
+
+        /// <summary>
+        /// 设置按钮是否可用
+        /// </summary>
+        /// <param name="flag">true，可用；false，不可用</param>
+        private void setBtnEnable(bool flag)
+        {
+            setCtrlEnabled(btnCls, flag);
+            setCtrlEnabled(btnLocalIP, flag);
+            setCtrlEnabled(btnUpdateIPDB, flag);
+            setCtrlEnabled(btnIPSeach, flag);
+            setCtrlEnabled(btnIPSearchOnline, flag);
+            setCtrlEnabled(btnWithHeadExp, flag);
+            setCtrlEnabled(btnNoHeadExp, flag);
+        }
+
+        /// <summary>
+        /// 委托 设置控件是否可用
+        /// </summary>
+        /// <param name="ctrl">控件</param>
+        /// <param name="l">true，可用；false，不可用</param>
+        delegate void SetCtrlEnabledDelegate(Control ctrl, bool l);//定义委托
+        private void setCtrlEnabled(Control ctrl,bool flag)
+        {
+            if (ctrl.InvokeRequired)//等待异步
+            {
+                SetCtrlEnabledDelegate setCtrlEnabledDelegate = new SetCtrlEnabledDelegate(setCtrlEnabled);
+                ctrl.Invoke(setCtrlEnabledDelegate, ctrl, flag);//通过代理调用方法
+            }
+            else
+            {
+                ctrl.Enabled = flag;
+            }
+        }
+
+        /// <summary>
+        /// 委托 输出日志信息
+        /// </summary>
+        /// <param name="l">日志内容</param>
+        delegate void LogDelegate(string l);//定义委托
+        private void log(string l)
+        {
+            if (this.txtResult.InvokeRequired)//等待异步
+            {
+                LogDelegate writelog = new LogDelegate(log);
+                this.txtResult.Invoke(writelog, l);//通过代理调用方法
+            }
+            else
+            {
+                int removeCount = txtResult.Text.IndexOf("\r\n") + 1;
+                //日志输出行数超过20行，则删除前面的
+                if (txtResult.GetLineFromCharIndex(txtResult.Text.Length) > 20)
+                {
+                    txtResult.Text = txtResult.Text.Remove(0, removeCount);
+                }
+
+                txtResult.AppendText(DateTime.Now.ToString("HH:mm:ss ") + l + "\r\n");
+            }
+        }
+
+        /// <summary>
+        /// 写入结果
+        /// </summary>
+        /// <param name="resultStr"></param>
+        private void addResult(string resultStr)
+        {
+            if (this.txtResult.InvokeRequired)//等待异步
+            {
+                LogDelegate writelog = new LogDelegate(addResult);
+                this.txtResult.Invoke(writelog, resultStr);//通过代理调用方法
+            }
+            else
+            {
+               
+                txtResult.Text=resultStr;
+            }
+        }
+
+        /// <summary>
+        /// 委托 设置进度条进度值
+        /// </summary>
+        /// <param name="progressBar1"></param>
+        /// <param name="value"></param>
+        delegate void SetProgressBarValueDelegate(ProgressBar progressBar1, int value);
+        private void setProgressBarValue(ProgressBar progressBar1, int value)
+        {
+            if (progressBar1.InvokeRequired)
+            {
+                object[] parameters = new object[] {progressBar1,value };
+                progressBar1.Invoke(new SetProgressBarValueDelegate(setProgressBarValue), parameters);
+            }
+            else
+                progressBar1.Value = value;
+        }
+
+        private void MainFrm_Load(object sender, EventArgs e)
+        {
+            mainFrm = this;
+        }
+
+
 
     }
 }
